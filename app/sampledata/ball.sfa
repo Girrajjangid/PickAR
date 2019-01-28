@@ -37,7 +37,7 @@
     file: 'sampledata/ball.obj',
     name: 'ball',
     recenter: 'root',
-    scale: 0.102257,
+    scale: 0.05,
   },
   version: '0.54:1',
 }

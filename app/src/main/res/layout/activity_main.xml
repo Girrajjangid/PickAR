@@ -7,7 +7,7 @@
 
     <fragment
         android:id="@+id/sceneform_fragment"
-        android:name="com.google.ar.sceneform.ux.ArFragment"
+        android:name="com.arcore.first.arfirst.WritingArFragment"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         app:layout_constraintTop_toTopOf="parent"
@@ -24,6 +24,25 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/sceneform_fragment"
         app:layout_constraintVertical_chainStyle="spread"
-        app:layout_constraintVertical_weight="1"/>
+        app:layout_constraintVertical_weight="1" />
+
+    <android.support.design.widget.FloatingActionButton
+        android:id="@+id/floatingActionButton1"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:clickable="true"
+        tools:layout_editor_absoluteX="328dp"
+        tools:layout_editor_absoluteY="511dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        android:layout_marginBottom="10dp"
+        android:layout_marginRight="10dp"
+        tools:srcCompat="@android:drawable/ic_menu_camera"
+        tools:ignore="MissingConstraints" />
 
 </android.support.constraint.ConstraintLayout>
+
+<!--
+    android:name="com.google.ar.sceneform.ux.ArFragment"
+-->

@@ -6,7 +6,6 @@ import android.app.AlertDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
-import android.graphics.Point;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
@@ -17,8 +16,9 @@ import android.support.design.widget.Snackbar;
 import android.support.v4.content.FileProvider;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.util.Log;
-import android.view.MotionEvent;
 import android.view.PixelCopy;
 import android.view.View;
 import android.widget.ImageView;
@@ -46,82 +46,63 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 
 public class MainActivity extends AppCompatActivity {
 
     private static final Double MIN_OPENGL_VERSION = 3.0;
     private static final String TAG = MainActivity.class.getSimpleName();
-    public ModelRenderable ballRenderable;
     public ArFragment arFragment;
     public  PointerDrawable pointer;
     public boolean isTracking;
     public boolean isHitting;
     public FloatingActionButton fab;
+    int[] imageModels;
+    String[] imageSFB;
+    RecyclerView recyclerViewModels;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        imageModels = new int[]{
+                R.drawable.droid_thumb,
+                R.drawable.house_thumb,
+                R.drawable.igloo_thumb,
+                R.drawable.cabin_thumb,
+                R.drawable.droid_thumb,};
+        imageSFB = new String[]{
+                "andy.sfb",
+                "House.sfb",
+                "igloo.sfb",
+                "Cabin.sfb",
+                "ball.sfb"};
 
-        /*if (!checkSupportedDevice(this)) {
+        if (!checkSupportedDevice(this)) {
             return;
-        }*/
-
-        arFragment = (ArFragment) getSupportFragmentManager().findFragmentById(R.id.sceneform_fragment);
-        fab=findViewById(R.id.floatingActionButton1);
-        try {
-            assert arFragment != null;
-            arFragment.getArSceneView().getScene().addOnUpdateListener(frameTime -> {
-                arFragment.onUpdate(frameTime);
-                onUpdate();
-            });
-        }catch (NullPointerException e){
-            e.getMessage();
-        }catch (AssertionError e){
-           Log.d("Error(Exception Raised) :" , e.getMessage());
         }
 
-        initializeGallery();
-        fab.setOnClickListener(view -> takePhoto());
-
-
-
-        // When you build a Renderable, Sceneform loads its resources in the background while returning
-        // a CompletableFuture. Call thenAccept(), handle(), or check isDone() before calling get().
-
-        /*ModelRenderable.builder()
-                .setSource(this, R.raw.ball)
-                //.setSource(this, Uri.parse("ball.sfb")). //load from assets
-                .build()
-                .thenAccept(renderable -> ballRenderable = renderable)
-                .exceptionally(
-                        throwable -> {
-                            Toast.makeText(this, "Unable to Load ball Renderable", Toast.LENGTH_LONG).show();
-                            return null;
-                        });*/
-
-        /*arFragment.setOnTapArPlaneListener(
-                (HitResult hitresult, Plane plane, MotionEvent motionEvent) -> {
-                    if (ballRenderable == null) {
-                        return;
-                    }
-                    //create the anchor
-                    Anchor anchor = hitresult.createAnchor();
-                    AnchorNode anchorNode = new AnchorNode(anchor);
-                    anchorNode.setParent(arFragment.getArSceneView().getScene());
-
-                    //create the transformable ball and add it to the anchor
-                    TransformableNode ball = new TransformableNode(arFragment.getTransformationSystem());
-                    ball.setParent(anchorNode);
-                    ball.setRenderable(ballRenderable);
-                    ball.select();
-                });*/
+        fab = findViewById(R.id.floatingActionButton1);
+        fab.setOnClickListener(v -> takePhoto());
+        arFragment = (ArFragment) getSupportFragmentManager().findFragmentById(R.id.sceneform_fragment);
+        arFragment.getArSceneView().getScene().addOnUpdateListener(frameTime -> {
+            arFragment.onUpdate(frameTime);
+            onUpdate();
+        });
+        initializeModels(imageModels);
     }
 
-    private void onUpdate() {
+    private void initializeModels(int[] imageModels) {
+        LinearLayoutManager layoutManager = new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false);
+        recyclerViewModels = findViewById(R.id.recylerview_images);
+        recyclerViewModels.setLayoutManager(layoutManager);
+        ModelAdapter adapter = new ModelAdapter(this, imageModels , imageSFB);
+        recyclerViewModels.setAdapter(adapter);
+    }
+
+    public void onUpdate() {
         boolean trackingChanged = updateTracking();
         View contentView = findViewById(android.R.id.content);
 
@@ -183,7 +164,8 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void initializeGallery() {
-        LinearLayout gallery = findViewById(R.id.gallery_layout);
+        LinearLayout gallery = null;
+                //findViewById(R.id.gallery_layout);
 
         ImageView andy = new ImageView(this);
         andy.setImageResource(R.drawable.droid_thumb);
@@ -217,7 +199,7 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-    private void addObject(Uri model) {
+    public void addObject(Uri model) {
         Frame frame = arFragment.getArSceneView().getArFrame();
         android.graphics.Point pt = getScreenCenter();
         List<HitResult> hits;
@@ -236,7 +218,6 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void placeObject(ArFragment fragment, Anchor anchor, Uri model) {
-        CompletableFuture<Void> renderableFuture =
                 ModelRenderable.builder()
                         .setSource(fragment.getContext(), model)
                         .build()
@@ -290,7 +271,7 @@ public class MainActivity extends AppCompatActivity {
                     File photoFile = new File(filename);
 
                     Uri photoURI = FileProvider.getUriForFile(MainActivity.this,
-                            MainActivity.this.getPackageName() + ".ar.codelab.name.provider",
+                            MainActivity.this.getPackageName() + ".first.arfirst.name.provider",
                             photoFile);
                     Intent intent = new Intent(Intent.ACTION_VIEW, photoURI);
                     intent.setDataAndType(photoURI, "image/*");
@@ -308,12 +289,12 @@ public class MainActivity extends AppCompatActivity {
         }, new Handler(handlerThread.getLooper()));
     }
 
-    public  String generateFilename(){
-        String date = new SimpleDateFormat("yyyyMMddHHmmss" , java.util.Locale.getDefault()).format(new Date());
-        return Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES) + File.separator + "Sceneform/" + date +
-                "_screenshot.jpg";
+    private String generateFilename() {
+        String date =
+                new SimpleDateFormat("yyyyMMddHHmmss", java.util.Locale.getDefault()).format(new Date());
+        return Environment.getExternalStoragePublicDirectory(
+                Environment.DIRECTORY_PICTURES) + File.separator + "Sceneform/" + date + "_screenshot.jpg";
     }
-
 
     private void saveBitmapToDisk(Bitmap bitmap, String filename) throws IOException {
 
@@ -326,6 +307,7 @@ public class MainActivity extends AppCompatActivity {
             bitmap.compress(Bitmap.CompressFormat.PNG, 100, outputData);
             outputData.writeTo(outputStream);
             outputStream.flush();
+            outputStream.close();
         } catch (IOException ex) {
             throw new IOException("Failed to save bitmap to disk", ex);
         }

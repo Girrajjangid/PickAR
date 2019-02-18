@@ -34,8 +34,6 @@ import com.google.ar.core.Trackable;
 import com.google.ar.core.TrackingState;
 import com.google.ar.sceneform.AnchorNode;
 import com.google.ar.sceneform.ArSceneView;
-import com.google.ar.sceneform.FrameTime;
-import com.google.ar.sceneform.Scene;
 import com.google.ar.sceneform.rendering.ModelRenderable;
 import com.google.ar.sceneform.rendering.Renderable;
 import com.google.ar.sceneform.ux.ArFragment;
@@ -46,10 +44,8 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -67,30 +63,36 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        pointer = new PointerDrawable();
         imageModels = new int[]{
                 R.drawable.droid_thumb,
                 R.drawable.house_thumb,
                 R.drawable.igloo_thumb,
                 R.drawable.cabin_thumb,
-                R.drawable.droid_thumb,};
+                R.drawable.droid_thumb,
+                R.drawable.earth,
+        };
         imageSFB = new String[]{
                 "andy.sfb",
                 "House.sfb",
                 "igloo.sfb",
                 "Cabin.sfb",
-                "ball.sfb"};
+                "ball.sfb",
+                "Earth.sfb"};
 
         if (!checkSupportedDevice(this)) {
             return;
         }
 
         fab = findViewById(R.id.floatingActionButton1);
-        fab.setOnClickListener(v -> takePhoto());
+        fab.setOnClickListener(v -> new SaveImage(arFragment,this).takePhoto());
         arFragment = (ArFragment) getSupportFragmentManager().findFragmentById(R.id.sceneform_fragment);
-        arFragment.getArSceneView().getScene().addOnUpdateListener(frameTime -> {
-            arFragment.onUpdate(frameTime);
-            onUpdate();
-        });
+        if (arFragment != null) {
+            arFragment.getArSceneView().getScene().addOnUpdateListener(frameTime -> {
+                arFragment.onUpdate(frameTime);
+                onUpdate();
+            });
+        }
         initializeModels(imageModels);
     }
 
@@ -163,41 +165,6 @@ public class MainActivity extends AppCompatActivity {
         return isTracking != wasTracking;
     }
 
-    private void initializeGallery() {
-        LinearLayout gallery = null;
-                //findViewById(R.id.gallery_layout);
-
-        ImageView andy = new ImageView(this);
-        andy.setImageResource(R.drawable.droid_thumb);
-        andy.setContentDescription("andy");
-        andy.setOnClickListener(view -> addObject(Uri.parse("andy.sfb")));
-        gallery.addView(andy);
-
-        ImageView cabin = new ImageView(this);
-        cabin.setImageResource(R.drawable.cabin_thumb);
-        cabin.setContentDescription("cabin");
-        cabin.setOnClickListener(view -> addObject(Uri.parse("Cabin.sfb")));
-        gallery.addView(cabin);
-
-        ImageView house = new ImageView(this);
-        house.setImageResource(R.drawable.house_thumb);
-        house.setContentDescription("house");
-        house.setOnClickListener(view -> addObject(Uri.parse("House.sfb")));
-        gallery.addView(house);
-
-        ImageView igloo = new ImageView(this);
-        igloo.setImageResource(R.drawable.igloo_thumb);
-        igloo.setContentDescription("igloo");
-        igloo.setOnClickListener(view -> addObject(Uri.parse("igloo.sfb")));
-        gallery.addView(igloo);
-
-        ImageView ball = new ImageView(this);
-        andy.setImageResource(R.drawable.droid_thumb);
-        andy.setContentDescription("Ball");
-        andy.setOnClickListener(view -> addObject(Uri.parse("ball.sfb")));
-        gallery.addView(ball);
-
-    }
 
     public void addObject(Uri model) {
         Frame frame = arFragment.getArSceneView().getArFrame();
@@ -243,75 +210,6 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
-    private void takePhoto() {
-        final String filename = generateFilename();
-        ArSceneView view = arFragment.getArSceneView();
-
-        // Create a bitmap the size of the scene view.
-        final Bitmap bitmap = Bitmap.createBitmap(view.getWidth(), view.getHeight(),
-                Bitmap.Config.ARGB_8888);
-
-        // Create a handler thread to offload the processing of the image.
-        final HandlerThread handlerThread = new HandlerThread("PixelCopier");
-        handlerThread.start();
-        // Make the request to copy.
-        PixelCopy.request(view, bitmap, (copyResult) -> {
-            if (copyResult == PixelCopy.SUCCESS) {
-                try {
-                    saveBitmapToDisk(bitmap, filename);
-                } catch (IOException e) {
-                    Toast toast = Toast.makeText(MainActivity.this, e.toString(),
-                            Toast.LENGTH_LONG);
-                    toast.show();
-                    return;
-                }
-                Snackbar snackbar = Snackbar.make(findViewById(android.R.id.content),
-                        "Photo saved", Snackbar.LENGTH_LONG);
-                snackbar.setAction("Open in Photos", v -> {
-                    File photoFile = new File(filename);
-
-                    Uri photoURI = FileProvider.getUriForFile(MainActivity.this,
-                            MainActivity.this.getPackageName() + ".first.arfirst.name.provider",
-                            photoFile);
-                    Intent intent = new Intent(Intent.ACTION_VIEW, photoURI);
-                    intent.setDataAndType(photoURI, "image/*");
-                    intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-                    startActivity(intent);
-
-                });
-                snackbar.show();
-            } else {
-                Toast toast = Toast.makeText(MainActivity.this,
-                        "Failed to copyPixels: " + copyResult, Toast.LENGTH_LONG);
-                toast.show();
-            }
-            handlerThread.quitSafely();
-        }, new Handler(handlerThread.getLooper()));
-    }
-
-    private String generateFilename() {
-        String date =
-                new SimpleDateFormat("yyyyMMddHHmmss", java.util.Locale.getDefault()).format(new Date());
-        return Environment.getExternalStoragePublicDirectory(
-                Environment.DIRECTORY_PICTURES) + File.separator + "Sceneform/" + date + "_screenshot.jpg";
-    }
-
-    private void saveBitmapToDisk(Bitmap bitmap, String filename) throws IOException {
-
-        File out = new File(filename);
-        if (!out.getParentFile().exists()) {
-            out.getParentFile().mkdirs();
-        }
-        try (FileOutputStream outputStream = new FileOutputStream(filename);
-             ByteArrayOutputStream outputData = new ByteArrayOutputStream()) {
-            bitmap.compress(Bitmap.CompressFormat.PNG, 100, outputData);
-            outputData.writeTo(outputStream);
-            outputStream.flush();
-            outputStream.close();
-        } catch (IOException ex) {
-            throw new IOException("Failed to save bitmap to disk", ex);
-        }
-    }
     /**
      * Returns false and displays an error message if Sceneform can not run, true if Sceneform can run
      * on this device.

@@ -41,7 +41,8 @@ dependencies {
     // Provides ArFragment, and other UX resources.
     implementation 'com.google.ar.sceneform.ux:sceneform-ux:1.6.0'
     // Alternatively, use ArSceneView without the UX dependency.
-    //implementation 'com.google.ar.sceneform:core:1.6.0'
+
+    implementation 'com.google.ar.sceneform:core:1.6.0'
     implementation 'com.android.support:design:28.0.0'
     implementation 'com.android.support:cardview-v7:28.0.0'
     implementation 'com.android.support:recyclerview-v7:28.0.0'
@@ -72,3 +73,8 @@ sceneform.asset('sampledata/models/igloo.obj',
         'default',
         'sampledata/models/igloo.sfa',
         'src/main/assets/igloo')
+
+sceneform.asset('sampledata/models/earth/earth.gltf',
+        'default',
+        'sampledata/models/earth/earth.sfa',
+        'src/main/assets/earth')
